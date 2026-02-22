@@ -5,30 +5,39 @@ import com.fawwa.limitlesspotions.LimitlessPotions;
 
 public class PotionCalculator {
     
-    public static int calculateNewDurationForLevelUp(int currentDuration) {
+    public static double calculateNewDurationForLevelUp(double currentDuration) {
         double percent = LimitlessPotions.getInstance()
                 .getConfigManager()
                 .getDurationRemainingPercent();
         
-        return (int) Math.max(1, currentDuration * (percent / 100.0));
+        return Math.max(0.1, currentDuration * (percent / 100.0));
     }
     
-    public static int calculateDurationBonus(int currentLevel, int currentDuration) {
+    public static double calculateDurationBonus(int currentLevel, double currentDuration) {
         ConfigManager config = LimitlessPotions.getInstance().getConfigManager();
         
-        double baseAddition = config.getBaseAdditionSeconds();
+        double baseBonus = config.getBaseBonusSeconds();
         double levelFactor = config.getLevelDiminishFactor();
         double durationFactor = config.getDurationDiminishFactor();
         
-        // Rumus diminishing return yang lebih smooth
-        // bonus = base * (1 / (1 + levelFactor * log(level))) * (1 / (1 + durationFactor * sqrt(duration)))
-        double levelDiminish = 1.0 / (1.0 + (levelFactor * Math.log(currentLevel + 1)));
-        double durationDiminish = 1.0 / (1.0 + (durationFactor * Math.sqrt(currentDuration / 10.0)));
+        // RUMUS: bonus = baseBonus / (level^levelFactor) / (log(duration+2)^durationFactor)
         
-        int bonus = (int) (baseAddition * levelDiminish * durationDiminish);
+        double levelDivisor = Math.pow(currentLevel, levelFactor);
+        double durationDivisor = Math.pow(Math.log(currentDuration + 2), durationFactor);
         
-        // Minimal bonus 1 detik, maksimal base addition
-        return Math.max(1, Math.min((int) baseAddition, bonus));
+        double bonus = baseBonus / (levelDivisor * durationDivisor);
+        
+        // Minimal 0.1 detik, maksimal baseBonus
+        bonus = Math.max(0.1, Math.min(bonus, baseBonus));
+        
+        // Debug
+        System.out.println("  [DEBUG] Level: " + currentLevel + 
+                         ", Durasi: " + String.format("%.2f", currentDuration) + 
+                         ", LevelDiv: " + String.format("%.3f", levelDivisor) +
+                         ", DurDiv: " + String.format("%.3f", durationDivisor) +
+                         ", Bonus: " + String.format("%.2f", bonus));
+        
+        return bonus;
     }
     
     public static boolean canUpgradeLevel(int currentLevel) {
@@ -41,7 +50,7 @@ public class PotionCalculator {
         return currentLevel < config.getMaxLevel();
     }
     
-    public static boolean canAddDuration(int currentDuration) {
+    public static boolean canAddDuration(double currentDuration) {
         ConfigManager config = LimitlessPotions.getInstance().getConfigManager();
         
         if (config.getMaxDuration() <= 0) {

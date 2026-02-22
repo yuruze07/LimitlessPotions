@@ -21,6 +21,7 @@ public class ConfigManager {
     private double levelDiminishFactor;
     private double durationDiminishFactor;
     private int maxDuration;
+    private double baseBonusSeconds;
     
     // Excluded potions
     private List<String> excludedPotions;
@@ -42,6 +43,7 @@ public class ConfigManager {
         
         // Load duration settings
         baseAdditionSeconds = config.getDouble("duration-up.base-addition-seconds", 30.0);
+        baseBonusSeconds = config.getDouble("duration-up.base-bonus-seconds", 3.0);
         levelDiminishFactor = config.getDouble("duration-up.level-diminish-factor", 0.7);
         durationDiminishFactor = config.getDouble("duration-up.duration-diminish-factor", 0.3);
         maxDuration = config.getInt("duration-up.max-duration", 0);
@@ -64,4 +66,5 @@ public class ConfigManager {
     public double getDurationDiminishFactor() { return durationDiminishFactor; }
     public int getMaxDuration() { return maxDuration; }
     public List<String> getExcludedPotions() { return excludedPotions; }
+    public double getBaseBonusSeconds() { return baseBonusSeconds; }
 }

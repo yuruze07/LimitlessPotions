@@ -12,12 +12,12 @@ level-up:
 
 # Pengaturan untuk penambahan durasi (Redstone)
 duration-up:
-  # Base time addition dalam detik (akan dikalikan dengan rumus diminishing)
-  base-addition-seconds: 30.0
+  # Base bonus dalam detik (default 3 detik)
+  base-bonus-seconds: 3.0
   # Faktor pengurang untuk level (semakin besar, semakin cepat diminishing)
-  level-diminish-factor: 0.5
+  level-diminish-factor: 1.2
   # Faktor pengurang untuk durasi (semakin besar, semakin cepat diminishing)
-  duration-diminish-factor: 0.2
+  duration-diminish-factor: 0.8
   # Durasi maksimal dalam detik (0 = tidak terbatas)
   max-duration: 0
 

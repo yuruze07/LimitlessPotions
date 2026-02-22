@@ -18,10 +18,15 @@ import java.util.List;
 public class PotionValidator {
     
     private static final NamespacedKey LEVEL_KEY = new NamespacedKey(LimitlessPotions.getInstance(), "potion_level");
-    private static final NamespacedKey DURATION_KEY = new NamespacedKey(LimitlessPotions.getInstance(), "potion_duration");
+    private static final NamespacedKey DURATION_KEY = new NamespacedKey(LimitlessPotions.getInstance(), "potion_duration_double"); // Sekarang double
     private static final NamespacedKey BASE_TYPE_KEY = new NamespacedKey(LimitlessPotions.getInstance(), "base_potion_type");
     private static final NamespacedKey UPGRADED_KEY = new NamespacedKey(LimitlessPotions.getInstance(), "is_upgraded");
-    
+    private static final NamespacedKey POTION_TYPE_KEY = new NamespacedKey(LimitlessPotions.getInstance(), "potion_type");
+    // Constants untuk tipe potion (taruh setelah POTION_TYPE_KEY)
+    public static final int TYPE_NORMAL = 0;
+    public static final int TYPE_SPLASH = 1;
+    public static final int TYPE_LINGERING = 2;
+
     public static boolean isValidPotion(ItemStack item) {
         if (item == null || !(item.getItemMeta() instanceof PotionMeta)) {
             return false;
@@ -99,17 +104,17 @@ public class PotionValidator {
         return 1;
     }
     
-    // Mendapatkan durasi potion dari PersistentDataContainer
-    public static int getCurrentDuration(ItemStack item) {
+    // Mendapatkan durasi potion SEBENARNYA dalam double (bukan detik)
+    public static double getCurrentDurationDouble(ItemStack item) {
         if (!(item.getItemMeta() instanceof PotionMeta)) return 0;
         
         PotionMeta meta = (PotionMeta) item.getItemMeta();
         PersistentDataContainer container = meta.getPersistentDataContainer();
         
-        // Coba ambil dari persistent data
-        Integer duration = container.get(DURATION_KEY, PersistentDataType.INTEGER);
+        // Coba ambil dari persistent data (sebagai double)
+        Double duration = container.get(DURATION_KEY, PersistentDataType.DOUBLE);
         if (duration != null) {
-            System.out.println("  [DEBUG getCurrentDuration] dari persistent: " + duration);
+            System.out.println("  [DEBUG getCurrentDurationDouble] dari persistent: " + duration + " detik (real)");
             return duration;
         }
         
@@ -119,12 +124,17 @@ public class PotionValidator {
         
         if (hasDuration(type)) {
             int defaultTicks = getDefaultDuration(type, data.isExtended());
-            int seconds = defaultTicks / 20;
-            System.out.println("  [DEBUG getCurrentDuration] dari vanilla: " + seconds);
+            double seconds = defaultTicks / 20.0;
+            System.out.println("  [DEBUG getCurrentDurationDouble] dari vanilla: " + seconds + " detik");
             return seconds;
         }
         
         return 0;
+    }
+    
+    // Untuk kompatibilitas dengan kode lama (return int)
+    public static int getCurrentDuration(ItemStack item) {
+        return (int) Math.round(getCurrentDurationDouble(item));
     }
     
     // Mendapatkan default duration dalam ticks
@@ -139,7 +149,7 @@ public class PotionValidator {
         if (typeName.contains("strength") || typeName.contains("jump") || 
             typeName.contains("regeneration") || typeName.contains("speed") ||
             typeName.contains("fire_resistance") || typeName.contains("invisibility") ||
-            typeName.contains("night_vision")) {
+            typeName.contains("night_vision") || typeName.contains("swiftness")) {
             return extended ? 9600 : 4800; // 8min / 4min (dalam ticks)
         }
         // Turtle Master
@@ -161,12 +171,14 @@ public class PotionValidator {
     private static PotionEffectType getEffectTypeFromPotionType(String typeName) {
         switch (typeName) {
             case "speed":
+            case "swiftness":
                 return PotionEffectType.SPEED;
             case "slowness":
                 return PotionEffectType.SLOWNESS;
             case "strength":
                 return PotionEffectType.STRENGTH;
             case "jump_boost":
+            case "leaping":
                 return PotionEffectType.JUMP_BOOST;
             case "regeneration":
                 return PotionEffectType.REGENERATION;
@@ -187,6 +199,7 @@ public class PotionValidator {
             case "turtle_master":
                 return PotionEffectType.RESISTANCE;
             default:
+                System.out.println("  [ERROR] Unknown potion type: " + typeName);
                 return null;
         }
     }
@@ -197,6 +210,7 @@ public class PotionValidator {
         
         switch (baseType) {
             case "speed":
+            case "swiftness":
                 displayName = "Potion of Speed";
                 break;
             case "slowness":
@@ -206,6 +220,7 @@ public class PotionValidator {
                 displayName = "Potion of Strength";
                 break;
             case "jump_boost":
+            case "leaping":
                 displayName = "Potion of Leaping";
                 break;
             case "regeneration":
@@ -257,10 +272,11 @@ public class PotionValidator {
         return level - 1;
     }
     
-    // Format durasi ke menit:detik
-    private static String formatDuration(int seconds) {
-        int minutes = seconds / 60;
-        int secs = seconds % 60;
+    // Format durasi ke menit:detik (dari double)
+    private static String formatDuration(double seconds) {
+        int totalSeconds = (int) Math.round(seconds);
+        int minutes = totalSeconds / 60;
+        int secs = totalSeconds % 60;
         return String.format("%d:%02d", minutes, secs);
     }
     
@@ -282,54 +298,90 @@ public class PotionValidator {
         return effectType.getName();
     }
     
-    // Apply efek ke potion - method ini HANYA untuk apply efek, jangan simpan data
-public static void applyPotionEffects(ItemStack item, int level, int durationSeconds, String baseType) {
+    // Mendapatkan tipe potion (normal/splash/lingering)
+public static int getPotionType(ItemStack item) {
+    if (!(item.getItemMeta() instanceof PotionMeta)) return TYPE_NORMAL;
+    
+    PotionMeta meta = (PotionMeta) item.getItemMeta();
+    PersistentDataContainer container = meta.getPersistentDataContainer();
+    
+    Integer type = container.get(POTION_TYPE_KEY, PersistentDataType.INTEGER);
+    return type != null ? type : TYPE_NORMAL;
+}
+
+// Menyimpan tipe potion
+public static void setPotionType(ItemStack item, int type) {
     if (!(item.getItemMeta() instanceof PotionMeta)) return;
     
     PotionMeta meta = (PotionMeta) item.getItemMeta();
+    PersistentDataContainer container = meta.getPersistentDataContainer();
     
-    PotionEffectType effectType = getEffectTypeFromPotionType(baseType);
-    if (effectType == null) return;
-    
-    int amplifier = getAmplifierFromLevel(level);
-    int durationTicks = durationSeconds * 20; // Convert seconds to ticks
-    
-    // LANGKAH 1: Hapus SEMUA efek custom
-    meta.clearCustomEffects();
-    
-    // LANGKAH 2: Set base potion ke WATER (tanpa efek)
-    // WATER tidak memiliki efek apapun
-    PotionType water = PotionType.WATER;
-    meta.setBasePotionData(new PotionData(water, false, false));
-    
-    // LANGKAH 3: Tambah efek custom kita (hanya 1 efek)
-    meta.addCustomEffect(new PotionEffect(effectType, durationTicks, amplifier), true);
-    
-    // Special case untuk turtle master
-    if (baseType.equals("turtle_master")) {
-        meta.addCustomEffect(new PotionEffect(PotionEffectType.SLOWNESS, durationTicks, amplifier), true);
-    }
-    
-    // LANGKAH 4: Set display name
-    meta.setDisplayName(ChatColor.RESET + getPotionDisplayName(baseType, level));
-    
-    // LANGKAH 5: Buat lore yang jelas
-    List<String> lore = new ArrayList<>();
-    lore.add(ChatColor.GRAY + "Level: " + ChatColor.WHITE + level);
-    lore.add(ChatColor.GRAY + "Duration: " + ChatColor.WHITE + durationSeconds + "s");
-    
-    // Hanya tampilkan 1 efek di lore
-    String effectName = getEffectDisplayName(effectType);
-    lore.add(ChatColor.BLUE + effectName + " " + level + " (" + formatDuration(durationSeconds) + ")");
-    
-    meta.setLore(lore);
-    
+    container.set(POTION_TYPE_KEY, PersistentDataType.INTEGER, type);
     item.setItemMeta(meta);
-    
-    // LANGKAH 6: Verifikasi tidak ada efek vanilla yang tersisa
-    System.out.println("  [DEBUG] Custom effects count: " + meta.getCustomEffects().size());
-    System.out.println("  [DEBUG] Base potion type: " + meta.getBasePotionData().getType().getKey().getKey());
 }
+    // Apply efek ke potion
+    public static void applyPotionEffects(ItemStack item, int level, double durationSeconds, String baseType) {
+        if (!(item.getItemMeta() instanceof PotionMeta)) return;
+        
+        PotionMeta meta = (PotionMeta) item.getItemMeta();
+        
+        // Simpan persistent data yang sudah ada
+        PersistentDataContainer oldContainer = meta.getPersistentDataContainer();
+        Integer oldLevel = oldContainer.get(LEVEL_KEY, PersistentDataType.INTEGER);
+        Double oldDuration = oldContainer.get(DURATION_KEY, PersistentDataType.DOUBLE);
+        String oldBaseType = oldContainer.get(BASE_TYPE_KEY, PersistentDataType.STRING);
+        Boolean oldUpgraded = oldContainer.get(UPGRADED_KEY, PersistentDataType.BOOLEAN);
+        
+        PotionEffectType effectType = getEffectTypeFromPotionType(baseType);
+        if (effectType == null) {
+            System.out.println("  [ERROR] effectType NULL untuk baseType: " + baseType);
+            return;
+        }
+        
+        System.out.println("  [DEBUG] Applying effect: " + effectType.getName() + " untuk baseType: " + baseType);
+        
+        int amplifier = getAmplifierFromLevel(level);
+        int durationTicks = (int) Math.max(20, Math.round(durationSeconds * 20)); // Minimal 1 detik (20 ticks)
+        
+        // LANGKAH 1: Hapus SEMUA efek custom
+        meta.clearCustomEffects();
+        
+        // LANGKAH 2: Set base potion ke WATER (tanpa efek)
+        PotionType water = PotionType.WATER;
+        meta.setBasePotionData(new PotionData(water, false, false));
+        
+        // LANGKAH 3: Tambah efek custom kita
+        meta.addCustomEffect(new PotionEffect(effectType, durationTicks, amplifier), true);
+        
+        // Special case untuk turtle master
+        if (baseType.equals("turtle_master")) {
+            meta.addCustomEffect(new PotionEffect(PotionEffectType.SLOWNESS, durationTicks, amplifier), true);
+        }
+        
+        // LANGKAH 4: Kembalikan persistent data
+        PersistentDataContainer newContainer = meta.getPersistentDataContainer();
+        if (oldLevel != null) newContainer.set(LEVEL_KEY, PersistentDataType.INTEGER, oldLevel);
+        if (oldDuration != null) newContainer.set(DURATION_KEY, PersistentDataType.DOUBLE, oldDuration);
+        if (oldBaseType != null) newContainer.set(BASE_TYPE_KEY, PersistentDataType.STRING, oldBaseType);
+        if (oldUpgraded != null) newContainer.set(UPGRADED_KEY, PersistentDataType.BOOLEAN, oldUpgraded);
+        
+        // LANGKAH 5: Set display name
+        meta.setDisplayName(ChatColor.RESET + getPotionDisplayName(baseType, level));
+        
+        // LANGKAH 6: Buat lore
+        List<String> lore = new ArrayList<>();
+        lore.add(ChatColor.GRAY + "Level: " + ChatColor.WHITE + level);
+        lore.add(ChatColor.GRAY + "Duration: " + ChatColor.WHITE + Math.round(durationSeconds) + "s");
+        
+        String effectName = getEffectDisplayName(effectType);
+        lore.add(ChatColor.BLUE + effectName + " " + level + " (" + formatDuration(durationSeconds) + ")");
+        
+        meta.setLore(lore);
+        
+        item.setItemMeta(meta);
+        
+        System.out.println("  [DEBUG] Applied effect - ticks: " + durationTicks + ", seconds (real): " + durationSeconds);
+    }
     
     // Mendapatkan tipe dasar potion
     public static String getBasePotionType(ItemStack item) {
@@ -348,8 +400,8 @@ public static void applyPotionEffects(ItemStack item, int level, int durationSec
         return data.getType().getKey().getKey();
     }
     
-    // Menyimpan data potion ke PersistentDataContainer
-    public static void savePotionData(ItemStack item, int level, int duration, String baseType) {
+    // Menyimpan data potion ke PersistentDataContainer (dengan double)
+    public static void savePotionData(ItemStack item, int level, double durationSeconds, String baseType) {
         if (!(item.getItemMeta() instanceof PotionMeta)) return;
         
         PotionMeta meta = (PotionMeta) item.getItemMeta();
@@ -357,20 +409,21 @@ public static void applyPotionEffects(ItemStack item, int level, int durationSec
         
         // Simpan semua data
         container.set(LEVEL_KEY, PersistentDataType.INTEGER, level);
-        container.set(DURATION_KEY, PersistentDataType.INTEGER, duration);
+        container.set(DURATION_KEY, PersistentDataType.DOUBLE, durationSeconds);
         container.set(BASE_TYPE_KEY, PersistentDataType.STRING, baseType);
         container.set(UPGRADED_KEY, PersistentDataType.BOOLEAN, true);
-        
+        container.set(POTION_TYPE_KEY, PersistentDataType.INTEGER, TYPE_NORMAL);
         // Update meta dengan data yang sudah disimpan
         item.setItemMeta(meta);
         
         // Apply efek berdasarkan data yang baru disimpan
-        applyPotionEffects(item, level, duration, baseType);
+        applyPotionEffects(item, level, durationSeconds, baseType);
         
         // Debug: verifikasi data tersimpan
         PotionMeta verifyMeta = (PotionMeta) item.getItemMeta();
         Integer savedLevel = verifyMeta.getPersistentDataContainer().get(LEVEL_KEY, PersistentDataType.INTEGER);
-        System.out.println("  [DEBUG savePotionData] Verified saved level: " + savedLevel);
+        Double savedDuration = verifyMeta.getPersistentDataContainer().get(DURATION_KEY, PersistentDataType.DOUBLE);
+        System.out.println("  [DEBUG savePotionData] Verified saved level: " + savedLevel + ", duration: " + savedDuration + "s");
     }
     
     // Inisialisasi potion baru (dari brewing vanilla)
@@ -384,13 +437,13 @@ public static void applyPotionEffects(ItemStack item, int level, int durationSec
         String baseType = data.getType().getKey().getKey();
         
         // Get duration in seconds from vanilla
-        int duration = 0;
+        double duration = 0;
         if (hasDuration(data.getType())) {
             int ticks = getDefaultDuration(data.getType(), data.isExtended());
-            duration = ticks / 20;
+            duration = ticks / 20.0;
         }
         
-        System.out.println("  [DEBUG initializeNewPotion] Creating new potion - Level: " + level + ", Duration: " + duration + ", Type: " + baseType);
+        System.out.println("  [DEBUG initializeNewPotion] Creating new potion - Level: " + level + ", Duration: " + duration + "s, Type: " + baseType);
         
         savePotionData(item, level, duration, baseType);
     }
