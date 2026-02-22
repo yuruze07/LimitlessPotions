@@ -1,0 +1,16 @@
+# Maven target folder
+target/
+*.jar
+
+# IDE files
+.vscode/
+*.class
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Server files
+*.log
+*.lock
