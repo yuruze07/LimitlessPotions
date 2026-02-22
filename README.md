@@ -1,6 +1,7 @@
 # LimitlessPotions
 
 A Minecraft Paper plugin that allows unlimited potion upgrading with diminishing returns.
+WARNING!! Still contains so many bugs
 
 ## Features
 - Upgrade potion levels with Glowstone Dust (duration reduced to 15%)
@@ -12,18 +13,6 @@ A Minecraft Paper plugin that allows unlimited potion upgrading with diminishing
 ## Requirements
 - Paper 1.21.1 or higher
 - Java 21
-
-## Installation
-1. Download the latest JAR from the Releases section
-2. Place in your server's `plugins` folder
-3. Restart your server
-
-## Configuration
-Edit `plugins/LimitlessPotions/config.yml` to adjust:
-- Duration reduction percentage for level upgrades
-- Base addition time for duration upgrades
-- Diminishing return factors
-- Max level/duration limits
 
 ## Building from source
 ```bash
