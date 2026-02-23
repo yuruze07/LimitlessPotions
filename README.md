@@ -11,14 +11,14 @@ WARNING!! Still contains so many bugs
 - Custom potion lore showing level and duration
 
 ## Requirements
-- Paper 1.21.1 or higher
+- Paper 1.21.11 or higher
 - Java 21
 
 ## Building from source
 ```bash
 mvn clean package
 ```
-The JAR will be in `target/LimitlessPotions-1.0.0.jar`
+The JAR will be in `target/LimitlessPotions-vX.X.X.jar`
 
 ## License
 MIT
