@@ -7,7 +7,7 @@
 
     <groupId>com.fawwa</groupId>  <!-- Ganti dari yourname ke fawwa -->
     <artifactId>LimitlessPotions</artifactId>
-    <version>1.0.0</version>
+    <version>v0.1.0</version>
     <packaging>jar</packaging>
 
     <name>LimitlessPotions</name>
