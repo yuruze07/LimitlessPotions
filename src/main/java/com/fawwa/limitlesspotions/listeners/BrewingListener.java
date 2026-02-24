@@ -37,7 +37,7 @@ public class BrewingListener implements Listener {
             return;
         }
         
-        // Handle level/duration upgrade
+        // Handle level/duration upgrade untuk SEMUA jenis potion
         if (!isLevelUp && !isDurationUp) return;
         
         // CANCEL EVENT
@@ -48,7 +48,14 @@ public class BrewingListener implements Listener {
         
         for (int i = 0; i < 3; i++) {
             ItemStack bottle = inventory.getItem(i);
-            if (bottle == null || bottle.getType() != Material.POTION) continue;
+            if (bottle == null) continue;
+            
+            // Cek apakah ini potion (biasa, splash, atau lingering)
+            boolean isValidPotion = bottle.getType() == Material.POTION || 
+                                   bottle.getType() == Material.SPLASH_POTION || 
+                                   bottle.getType() == Material.LINGERING_POTION;
+            
+            if (!isValidPotion) continue;
             
             if (!PotionValidator.isValidPotion(bottle)) continue;
             
@@ -61,23 +68,23 @@ public class BrewingListener implements Listener {
             
             if (isLevelUp) {
                 if (!PotionCalculator.canUpgradeLevel(currentLevel + 1)) {
-                    sendMessage(inventory, "max-level");
+                    // Hapus pesan chat
                     continue;
                 }
                 
                 double newDuration = PotionCalculator.calculateNewDurationForLevelUp(currentDurationDouble);
                 int newLevel = currentLevel + 1;
                 
-                // Simpan data baru
+                // Simpan data baru (pertahankan tipe item yang sama)
                 PotionValidator.savePotionData(bottle, newLevel, newDuration, baseType);
                 inventory.setItem(i, bottle);
                 
-                sendMessage(inventory, "upgrade-level", "%level%", String.valueOf(newLevel));
+                // Hapus sendMessage
                 success = true;
                 
             } else if (isDurationUp) {
                 if (!PotionCalculator.canAddDuration(currentDurationDouble)) {
-                    sendMessage(inventory, "max-duration");
+                    // Hapus pesan chat
                     continue;
                 }
                 
@@ -88,9 +95,7 @@ public class BrewingListener implements Listener {
                 PotionValidator.savePotionData(bottle, currentLevel, newDuration, baseType);
                 inventory.setItem(i, bottle);
                 
-                sendMessage(inventory, "upgrade-duration", 
-                           "%duration%", String.valueOf((int)Math.round(bonus)),
-                           "%total%", String.valueOf((int)Math.round(newDuration)));
+                // Hapus sendMessage
                 success = true;
             }
         }
@@ -143,7 +148,13 @@ public class BrewingListener implements Listener {
         
         for (int i = 0; i < 3; i++) {
             ItemStack bottle = inventory.getItem(i);
-            if (bottle == null || (bottle.getType() != Material.POTION && bottle.getType() != Material.SPLASH_POTION)) continue;
+            if (bottle == null) continue;
+            
+            // Bisa dari potion biasa atau splash potion
+            boolean isValidSource = bottle.getType() == Material.POTION || 
+                                   bottle.getType() == Material.SPLASH_POTION;
+            
+            if (!isValidSource) continue;
             
             if (!PotionValidator.isValidPotion(bottle)) continue;
             
@@ -169,27 +180,6 @@ public class BrewingListener implements Listener {
             inventory.setIngredient(ingredient);
             inventory.getHolder().update();
         }
-    }
-    
-    private void sendMessage(BrewerInventory inventory, String messageKey, String... replacements) {
-        if (inventory.getHolder() == null) return;
-        
-        String message = LimitlessPotions.getInstance()
-                .getConfigManager()
-                .getMessage(messageKey);
-        
-        for (int i = 0; i < replacements.length; i += 2) {
-            if (i + 1 < replacements.length) {
-                message = message.replace(replacements[i], replacements[i + 1]);
-            }
-        }
-        
-        final String finalMessage = message;
-        inventory.getHolder().getWorld().getPlayers().forEach(player -> {
-            if (player.getLocation().distance(inventory.getLocation()) < 5) {
-                player.sendMessage(finalMessage);
-            }
-        });
     }
     
     @EventHandler
