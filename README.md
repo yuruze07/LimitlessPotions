@@ -34,7 +34,7 @@ When you brew a potion, it's automatically converted to a custom potion with per
 ```
 mvn clean package
 ```
-The JAR will be in target/LimitlessPotions-vX.X.X.jar
+The JAR will be in target/LimitlessPotions-X.X.X.jar
 
 ## Known Issues
 - Fuel restoration when blocking ingredients doesn't work properly (fuel still decreases)
