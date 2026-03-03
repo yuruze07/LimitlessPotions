@@ -1,3 +1,4 @@
+
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -7,7 +8,7 @@
 
     <groupId>com.fawwa</groupId>  <!-- Ganti dari yourname ke fawwa -->
     <artifactId>LimitlessPotions</artifactId>
-    <version>0.1.2</version>
+    <version>0.1.1</version>
     <packaging>jar</packaging>
 
     <name>LimitlessPotions</name>
@@ -31,7 +32,7 @@
         <dependency>
             <groupId>io.papermc.paper</groupId>
             <artifactId>paper-api</artifactId>
-            <version>1.21.11-R0.1-SNAPSHOT</version>  <!-- Update ke versi terbaru -->
+            <version>1.21.3-R0.1-SNAPSHOT</version>  <!-- Update ke versi terbaru -->
             <scope>provided</scope>
         </dependency>
     </dependencies>

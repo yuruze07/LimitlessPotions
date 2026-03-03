@@ -3,8 +3,8 @@
 
 # Pengaturan untuk penambahan level (Glowstone)
 level-up:
-  # Persentase durasi yang tersisa setelah upgrade level (default: 15%)
-  duration-remaining-percent: 15.0
+  # Persentase durasi yang tersisa setelah upgrade level (default: 40%)
+  duration-remaining-percent: 40.0
   # Apakah level bisa terus naik tanpa batas?
   unlimited-levels: true
   # Level maksimal jika unlimited-levels false
@@ -13,27 +13,11 @@ level-up:
 # Pengaturan untuk penambahan durasi (Redstone)
 duration-up:
   # Base bonus dalam detik (default 3 detik)
-  base-bonus-seconds: 3.0
-  # Faktor pengurang untuk level (semakin besar, semakin cepat diminishing)
-  level-diminish-factor: 1.2
-  # Faktor pengurang untuk durasi (semakin besar, semakin cepat diminishing)
-  duration-diminish-factor: 0.8
+  base-bonus-seconds: 10.0
   # Durasi maksimal dalam detik (0 = tidak terbatas)
   max-duration: 0
 
 # Pengecualian untuk potion tertentu
 excluded-potions:
-  - "healing"
-  - "harming"
-  - "strong_healing"
-  - "strong_harming"
   - "instant_health"
   - "instant_damage"
-
-# Pesan-pesan dalam plugin
-messages:
-  no-permission: "&cKamu tidak punya izin untuk ini!"
-  upgrade-level: "&aPotion dinaikkan ke level &e%level%"
-  upgrade-duration: "&aDurasi potion ditambah &e%duration% &adetik (Sekarang: &e%total%&a)"
-  max-level: "&cPotion sudah mencapai level maksimal!"
-  max-duration: "&cPotion sudah mencapai durasi maksimal!"
